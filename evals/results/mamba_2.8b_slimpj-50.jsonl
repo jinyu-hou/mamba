@@ -1,0 +1,339 @@
+{
+  "results": {
+    "arc_challenge": {
+      "acc,none": 0.2150170648464164,
+      "acc_stderr,none": 0.012005717634133614,
+      "acc_norm,none": 0.26706484641638223,
+      "acc_norm_stderr,none": 0.012928933196496364
+    },
+    "arc_easy": {
+      "acc,none": 0.2828282828282828,
+      "acc_stderr,none": 0.00924147277532822,
+      "acc_norm,none": 0.2845117845117845,
+      "acc_norm_stderr,none": 0.009258050925618821
+    },
+    "boolq": {
+      "acc,none": 0.43577981651376146,
+      "acc_stderr,none": 0.008672621732015941
+    },
+    "hellaswag": {
+      "acc,none": 0.2688707428799044,
+      "acc_stderr,none": 0.004424664761480243,
+      "acc_norm,none": 0.2849034056960765,
+      "acc_norm_stderr,none": 0.004504459553909773
+    },
+    "openbookqa": {
+      "acc,none": 0.182,
+      "acc_stderr,none": 0.017272773297730446,
+      "acc_norm,none": 0.272,
+      "acc_norm_stderr,none": 0.01992048320956607
+    },
+    "piqa": {
+      "acc,none": 0.5272034820457019,
+      "acc_stderr,none": 0.011648545262429021,
+      "acc_norm,none": 0.5174102285092492,
+      "acc_norm_stderr,none": 0.011658749823107691
+    },
+    "race": {
+      "acc,none": 0.20861244019138755,
+      "acc_stderr,none": 0.012575187284422189
+    },
+    "truthfulqa_mc2": {
+      "acc,none": 0.506447072545498,
+      "acc_stderr,none": 0.016892728255646305
+    },
+    "winogrande": {
+      "acc,none": 0.5177584846093133,
+      "acc_stderr,none": 0.014043619596174962
+    }
+  },
+  "configs": {
+    "arc_challenge": {
+      "task": "arc_challenge",
+      "group": [
+        "ai2_arc"
+      ],
+      "dataset_path": "ai2_arc",
+      "dataset_name": "ARC-Challenge",
+      "training_split": "train",
+      "validation_split": "validation",
+      "test_split": "test",
+      "doc_to_text": "Question: {{question}}\nAnswer:",
+      "doc_to_target": "{{choices.label.index(answerKey)}}",
+      "doc_to_choice": "{{choices.text}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "Question: {{question}}\nAnswer:"
+    },
+    "arc_easy": {
+      "task": "arc_easy",
+      "group": [
+        "ai2_arc"
+      ],
+      "dataset_path": "ai2_arc",
+      "dataset_name": "ARC-Easy",
+      "training_split": "train",
+      "validation_split": "validation",
+      "test_split": "test",
+      "doc_to_text": "Question: {{question}}\nAnswer:",
+      "doc_to_target": "{{choices.label.index(answerKey)}}",
+      "doc_to_choice": "{{choices.text}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "Question: {{question}}\nAnswer:"
+    },
+    "boolq": {
+      "task": "boolq",
+      "group": [
+        "super-glue-lm-eval-v1"
+      ],
+      "dataset_path": "super_glue",
+      "dataset_name": "boolq",
+      "training_split": "train",
+      "validation_split": "validation",
+      "doc_to_text": "{{passage}}\nQuestion: {{question}}?\nAnswer:",
+      "doc_to_target": "label",
+      "doc_to_choice": [
+        "no",
+        "yes"
+      ],
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc"
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "passage"
+    },
+    "hellaswag": {
+      "task": "hellaswag",
+      "group": [
+        "multiple_choice"
+      ],
+      "dataset_path": "hellaswag",
+      "training_split": "train",
+      "validation_split": "validation",
+      "process_docs": "<function process_docs at 0x14fe2bddf010>",
+      "doc_to_text": "{{query}}",
+      "doc_to_target": "{{label}}",
+      "doc_to_choice": "{{choices}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": false
+    },
+    "openbookqa": {
+      "task": "openbookqa",
+      "dataset_path": "openbookqa",
+      "dataset_name": "main",
+      "training_split": "train",
+      "validation_split": "validation",
+      "test_split": "test",
+      "doc_to_text": "question_stem",
+      "doc_to_target": "{{choices.label.index(answerKey.lstrip())}}",
+      "doc_to_choice": "{{choices.text}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "question_stem"
+    },
+    "piqa": {
+      "task": "piqa",
+      "dataset_path": "piqa",
+      "training_split": "train",
+      "validation_split": "validation",
+      "doc_to_text": "Question: {{goal}}\nAnswer:",
+      "doc_to_target": "label",
+      "doc_to_choice": "{{[sol1, sol2]}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "goal"
+    },
+    "race": {
+      "task": "race",
+      "dataset_path": "EleutherAI/race",
+      "dataset_name": "high",
+      "test_split": "test",
+      "doc_to_text": "<function doc_to_text at 0x14fe2b9484c0>",
+      "doc_to_target": "<function doc_to_target at 0x14fe2b948940>",
+      "doc_to_choice": "<function doc_to_choice at 0x14fe2b948c10>",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": false
+    },
+    "truthfulqa_mc2": {
+      "task": "truthfulqa_mc2",
+      "group": [
+        "truthfulqa"
+      ],
+      "dataset_path": "truthful_qa",
+      "dataset_name": "multiple_choice",
+      "validation_split": "validation",
+      "doc_to_text": "{% set prompt_qa = 'Q: What is human life expectancy in the United States?\nA: Human life expectancy in the United States is 78 years.\n\nQ: Who was president of the United States in 1955?\nA: Dwight D. Eisenhower was president of the United States in 1955.\n\nQ: Which party did he belong to?\nA: He belonged to the Republican Party.\n\nQ: What is the square root of banana?\nA: I have no comment.\n\nQ: How does a telescope work?\nA: Telescopes use lenses or mirrors to focus light and make objects appear closer.\n\nQ: Where were the 1992 Olympics held?\nA: The 1992 Olympics were held in Barcelona, Spain.'%}{{prompt_qa + '\n\nQ: ' + question + '\nA:'}}",
+      "doc_to_target": 0,
+      "doc_to_choice": "{{mc2_targets.choices}}",
+      "process_results": "<function process_results_mc2 at 0x14fe2d685120>",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "question"
+    },
+    "winogrande": {
+      "task": "winogrande",
+      "dataset_path": "winogrande",
+      "dataset_name": "winogrande_xl",
+      "training_split": "train",
+      "validation_split": "validation",
+      "doc_to_text": "<function doc_to_text at 0x14fe2beaf1c0>",
+      "doc_to_target": "<function doc_to_target at 0x14fe2beaf370>",
+      "doc_to_choice": "<function doc_to_choice at 0x14fe2beaf5b0>",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "sentence"
+    }
+  },
+  "versions": {
+    "arc_challenge": "Yaml",
+    "arc_easy": "Yaml",
+    "boolq": "Yaml",
+    "hellaswag": "Yaml",
+    "openbookqa": "Yaml",
+    "piqa": "Yaml",
+    "race": "Yaml",
+    "truthfulqa_mc2": "Yaml",
+    "winogrande": "Yaml"
+  },
+  "config": {
+    "model": "mamba",
+    "model_args": "pretrained=state-spaces/mamba-2.8b-slimpj",
+    "batch_size": "64",
+    "batch_sizes": [],
+    "device": "cuda",
+    "use_cache": null,
+    "limit": null,
+    "bootstrap_iters": 100000
+  },
+  "git_hash": "da2626b"
+}

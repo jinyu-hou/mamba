@@ -1,0 +1,22 @@
+Start running with basic DDP on rank 0.
+Device ID: 0
+mamba (pretrained=state-spaces/mamba-2.8b-slimpj), limit: None, num_fewshot: None, batch_size: 64
+|    Tasks     |Version|Filter| Metric |Value |   |Stderr|
+|--------------|-------|------|--------|-----:|---|-----:|
+|arc_challenge |Yaml   |none  |acc     |0.3874|±  |0.0142|
+|              |       |none  |acc_norm|0.4164|±  |0.0144|
+|arc_easy      |Yaml   |none  |acc     |0.7264|±  |0.0091|
+|              |       |none  |acc_norm|0.6814|±  |0.0096|
+|boolq         |Yaml   |none  |acc     |0.7104|±  |0.0079|
+|hellaswag     |Yaml   |none  |acc     |0.5245|±  |0.0050|
+|              |       |none  |acc_norm|0.7097|±  |0.0045|
+|openbookqa    |Yaml   |none  |acc     |0.2860|±  |0.0202|
+|              |       |none  |acc_norm|0.3980|±  |0.0219|
+|piqa          |Yaml   |none  |acc     |0.7715|±  |0.0098|
+|              |       |none  |acc_norm|0.7818|±  |0.0096|
+|race          |Yaml   |none  |acc     |0.3665|±  |0.0149|
+|truthfulqa_mc2|Yaml   |none  |acc     |0.3435|±  |0.0132|
+|winogrande    |Yaml   |none  |acc     |0.6598|±  |0.0133|
+
+Start running with basic DDP on rank 0.
+Device ID: 0
