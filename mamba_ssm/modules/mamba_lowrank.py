@@ -127,12 +127,15 @@ class Mamba(nn.Module):
     def lowrank_decomp(self, preserve_rate, device=None, dtype=None):
         # self.A_log_lowrank = self._param_lowrank_decomp(preserve_rate, self.A_log, None)
         self.in_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.in_proj.weight, self.in_proj.bias, device=device, dtype=dtype)
-        self.x_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.x_proj.weight, self.x_proj.bias, device=device, dtype=dtype)
-        self.dt_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.dt_proj.weight, self.dt_proj.bias, device=device, dtype=dtype)
+        # self.x_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.x_proj.weight, self.x_proj.bias, device=device, dtype=dtype)
+        # self.dt_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.dt_proj.weight, self.dt_proj.bias, device=device, dtype=dtype)
         self.out_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.out_proj.weight, self.out_proj.bias, device=device, dtype=dtype)
-        # print(self.A_log_lowrank)
 
-        self.in_proj, self.x_proj, self.dt_proj, self.out_proj = None, None, None, None
+        # self.in_proj, self.x_proj, self.dt_proj, self.out_proj = None, None, None, None
+        self.in_proj = None
+        # self.x_proj = None
+        # self.dt_proj = None
+        self.out_proj = None
 
         # print(self.in_proj_lowrank)
         # print(self.x_proj_lowrank)
@@ -166,8 +169,8 @@ class Mamba(nn.Module):
         """
         batch, seqlen, dim = hidden_states.shape
         in_proj_A, in_proj_B = self.in_proj_lowrank
-        x_proj_A, x_proj_B = self.x_proj_lowrank
-        dt_proj_A, dt_proj_B = self.dt_proj_lowrank
+        # x_proj_A, x_proj_B = self.x_proj_lowrank
+        # dt_proj_A, dt_proj_B = self.dt_proj_lowrank
         out_proj_A, out_proj_B = self.out_proj_lowrank
 
         conv_state, ssm_state = None, None
@@ -197,15 +200,18 @@ class Mamba(nn.Module):
                 xz,
                 self.conv1d.weight,
                 self.conv1d.bias,
-                x_proj_B.weight @ x_proj_A.weight,
-                dt_proj_B.weight @ dt_proj_A.weight,
+                self.x_proj.weight,
+                # x_proj_B.weight @ x_proj_A.weight,
+                self.dt_proj.weight,
+                # dt_proj_B.weight @ dt_proj_A.weight,
                 out_proj_B.weight @ out_proj_A.weight,
                 out_proj_B.bias,
                 A,
                 None,  # input-dependent B
                 None,  # input-dependent C
                 self.D.float(),
-                delta_bias=dt_proj_B.bias.float(),
+                # delta_bias=dt_proj_B.bias.float(),
+                delta_bias=self.dt_proj.bias.float(),
                 delta_softplus=True,
             )
         else:
@@ -229,9 +235,11 @@ class Mamba(nn.Module):
             # We're careful here about the layout, to avoid extra transposes.
             # We want dt to have d as the slowest moving dimension
             # and L as the fastest moving dimension, since those are what the ssm_scan kernel expects.
-            x_dbl = self.x_proj_lowrank(rearrange(x, "b d l -> (b l) d"))  # (bl d)
+            # x_dbl = self.x_proj_lowrank(rearrange(x, "b d l -> (b l) d"))  # (bl d)
+            x_dbl = self.x_proj(rearrange(x, "b d l -> (b l) d"))  # (bl d)
             dt, B, C = torch.split(x_dbl, [self.dt_rank, self.d_state, self.d_state], dim=-1)
-            dt = dt_proj_B.weight @ (dt_proj_A.weight @ dt.t())
+            # dt = dt_proj_B.weight @ (dt_proj_A.weight @ dt.t())
+            dt = self.dt_proj.weight @ dt.t()
             dt = rearrange(dt, "d (b l) -> b d l", l=seqlen)
             B = rearrange(B, "(b l) dstate -> b dstate l", l=seqlen).contiguous()
             C = rearrange(C, "(b l) dstate -> b dstate l", l=seqlen).contiguous()
@@ -244,7 +252,8 @@ class Mamba(nn.Module):
                 C,
                 self.D.float(),
                 z=z,
-                delta_bias=dt_proj_B.bias.float(),
+                delta_bias=self.dt_proj.bias.float(),
+                # delta_bias=dt_proj_B.bias.float(),
                 delta_softplus=True,
                 return_last_state=ssm_state is not None,
             )
@@ -258,7 +267,7 @@ class Mamba(nn.Module):
     def step(self, hidden_states, conv_state, ssm_state):
         dtype = hidden_states.dtype
         assert hidden_states.shape[1] == 1, "Only support decoding with 1 token at a time for now"
-        xz = self.in_proj(hidden_states.squeeze(1))  # (B 2D)
+        xz = self.in_proj_lowrank(hidden_states.squeeze(1))  # (B 2D)
         x, z = xz.chunk(2, dim=-1)  # (B D)
 
         # Conv step
@@ -299,11 +308,11 @@ class Mamba(nn.Module):
                 ssm_state, x, dt, A, B, C, self.D, z=z, dt_bias=self.dt_proj.bias, dt_softplus=True
             )
 
-        out = self.out_proj(y)
+        out = self.out_proj_lowrank(y)
         return out.unsqueeze(1), conv_state, ssm_state
 
     def allocate_inference_cache(self, batch_size, max_seqlen, dtype=None, **kwargs):
-        device = self.out_proj.weight.device
+        device = self.x_proj.weight.device
         conv_dtype = self.conv1d.weight.dtype if dtype is None else dtype
         conv_state = torch.zeros(
             batch_size, self.d_model * self.expand, self.d_conv, device=device, dtype=conv_dtype

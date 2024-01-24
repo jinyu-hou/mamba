@@ -25,9 +25,8 @@ class MambaEvalWrapper(HFLM):
                  dtype=torch.float16, preserve_rate=1.0):
         LM.__init__(self)
         self._model = MambaLMHeadModel.from_pretrained(pretrained, dtype=dtype, device=device)
-        preserve_rate = float(preserve_rate)
-        self._model.lowrank_decomp(preserve_rate=preserve_rate, device=device, dtype=dtype)
-        self.export_el_count(pretrained, preserve_rate)
+        self._model.lowrank_decomp(preserve_rate=float(preserve_rate), device=device, dtype=dtype)
+        self.export_el_count(pretrained, float(preserve_rate))
         if device == "cuda":
             self._model = self.init_ddp(self._model)
         self.tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
