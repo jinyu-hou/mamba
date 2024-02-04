@@ -11,7 +11,7 @@ from torch.linalg import svd
 
 from einops import rearrange, repeat
 
-from mamba_ssm.ops.selective_scan_interface import selective_scan_fn, mamba_inner_fn
+from mamba_ssm.ops.selective_scan_interface_lowrank import selective_scan_fn, mamba_inner_fn
 
 try:
     from causal_conv1d import causal_conv1d_fn, causal_conv1d_update
@@ -125,7 +125,12 @@ class Mamba(nn.Module):
         self.out_proj_lowrank = None
 
     def lowrank_decomp(self, preserve_rate, device=None, dtype=None):
-        # self.A_log_lowrank = self._param_lowrank_decomp(preserve_rate, self.A_log, None)
+        # print(self.A_log.shape)
+        # A_lowrank = self._param_lowrank_decomp(0.5, -torch.exp(self.A_log.float()), None, device=device, dtype=torch.float32)
+        # A_lowrank_weight = A_lowrank[1].weight @ A_lowrank[0].weight
+        # self.A_log = nn.Parameter(torch.log(-A_lowrank_weight))
+        # print(self.A_log.shape)
+
         self.in_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.in_proj.weight, self.in_proj.bias, device=device, dtype=dtype)
         # self.x_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.x_proj.weight, self.x_proj.bias, device=device, dtype=dtype)
         # self.dt_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.dt_proj.weight, self.dt_proj.bias, device=device, dtype=dtype)
@@ -204,7 +209,8 @@ class Mamba(nn.Module):
                 # x_proj_B.weight @ x_proj_A.weight,
                 self.dt_proj.weight,
                 # dt_proj_B.weight @ dt_proj_A.weight,
-                out_proj_B.weight @ out_proj_A.weight,
+                out_proj_A.weight,
+                out_proj_B.weight,
                 out_proj_B.bias,
                 A,
                 None,  # input-dependent B

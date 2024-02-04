@@ -15,6 +15,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from os.path import dirname
 from pathlib import Path
 import json
+from datetime import datetime
 
 @register_model("mamba")
 class MambaEvalWrapper(HFLM):
@@ -67,7 +68,8 @@ class MambaEvalWrapper(HFLM):
     def _model_generate(self, context, max_length, stop, **generation_kwargs):
         raise NotImplementedError()
 
-
 if __name__ == "__main__":
+    startTime = datetime.now()
     cli_evaluate()
+    print("***** Time of total execution: {} *****".format(datetime.now() - startTime))
     dist.destroy_process_group()
