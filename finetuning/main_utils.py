@@ -5,6 +5,7 @@ import tqdm
 import math
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 from torch.distributed.fsdp import FullStateDictConfig
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import StateDictType
@@ -12,6 +13,8 @@ from lightning.fabric.strategies import FSDPStrategy
 
 from mamba_ssm.models.mixer_seq_lowrank import MambaLMHeadModel
 #from model_utils.modeling_llama import LlamaForCausalLM
+
+from packed_dataset import PackedDataset
 
 
 def load_jsonl_examples(filename,
@@ -74,7 +77,7 @@ def save_checkpoint(fabric, tokenizer, model, optimizer, save_dir):
 
     if fabric.global_rank == 0:
         tokenizer.save_pretrained(save_dir)
-        assert isinstance(model.module, MambaLMHeadModel)
+        assert isinstance(model, MambaLMHeadModel)
         # model.module.save_pretrained(
         #     save_dir, state_dict=state_dict, safe_serialization=False)
 
@@ -96,3 +99,59 @@ def get_last_ckpt_idx(workdir):
             last_ckpt_idx = ckpt_idx
 
     return last_ckpt_idx
+
+
+def create_dataloader(
+    batch_size: int,
+    block_size: int,
+    data_dir: str,
+    fabric,
+    shuffle: bool = True,
+    seed: int = 12345,
+) -> DataLoader:
+    datasets = []
+    filenames = glob.glob(os.path.join(data_dir + "*"))
+    dataset = PackedDataset(
+        filenames, n_chunks=4, block_size=block_size, shuffle=shuffle, seed=seed,
+        num_processes=fabric.world_size, process_rank=fabric.global_rank,
+    )
+
+    if not dataset:
+        raise RuntimeError(
+            f"No data found at {data_dir}. Make sure you ran prepare_redpajama.py to create the dataset."
+        )
+
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
+
+
+def create_dataloaders(
+    batch_size: int,
+    block_size: int,
+    fabric,
+    train_data_dir: str = "/jet/home/jhou/project/huggingface/datasets/DKYoon___slim_pajama-6_b/prepared/train",
+    val_data_dir = "/jet/home/jhou/project/huggingface/datasets/DKYoon___slim_pajama-6_b/prepared/validation",
+    seed: int = 12345,
+):
+    # Increase by one because we need the next word as well
+    effective_block_size = block_size + 1
+    train_dataloader = create_dataloader(
+        batch_size=batch_size,
+        block_size=effective_block_size,
+        fabric=fabric,
+        data_dir=train_data_dir,
+        shuffle=True,
+        seed=seed,
+    )
+    val_dataloader = (
+        create_dataloader(
+            batch_size=batch_size,
+            block_size=effective_block_size,
+            fabric=fabric,
+            data_dir=val_data_dir,
+            shuffle=False,
+            seed=seed,
+        )
+        if val_data_dir
+        else None
+    )
+    return train_dataloader, val_dataloader

@@ -3,6 +3,7 @@ import torch
 import transformers
 from transformers import AutoTokenizer
 
+# from mamba_ssm.models.mixer_seq_simple import MambaLMHeadModel
 from mamba_ssm.models.mixer_seq_lowrank import MambaLMHeadModel
 
 from lm_eval.api.model import LM
@@ -51,7 +52,7 @@ class MambaEvalWrapper(HFLM):
 
     def export_el_count(self, pretrained, preserve_rate):
         model_id = pretrained.split("/")[1].replace("-", "_")
-        outfile = "{}/results/{}-{}-numel.jsonl".format(
+        outfile = "{}/results/{}_A-{}-numel.jsonl".format(
             dirname(__file__), model_id, int(preserve_rate*100))
         if Path(outfile).is_file():
             return 

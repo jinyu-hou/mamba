@@ -46,4 +46,12 @@ CUDA_VISIBLE_DEVICES=0 accelerate launch evals/lm_harness_eval.py \
 #     --batch_size 32 \
 #     --output_path ${result_dir}/${result_prefix}-$preserve_percentage-mmlu.jsonl
 
+# CUDA_VISIBLE_DEVICES=1 accelerate launch evals/lm_harness_eval.py \
+#     --model mamba \
+#     --model_args pretrained=state-spaces/$model_id,preserve_rate=$preserve_rate \
+#     --tasks boolq,piqa,hellaswag,winogrande,arc_easy,arc_challenge,openbookqa,race,truthfulqa_mc2 \
+#     --device cuda \
+#     --batch_size 32 \
+#     --output_path ${result_dir}/${result_prefix}_A-$preserve_percentage.jsonl 
+
 # python evals/results_to_csv.py

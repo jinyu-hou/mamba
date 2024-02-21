@@ -1,0 +1,38 @@
+[rank: 0] Seed set to 11111
+Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/torch/distributed/distributed_c10d.py:2387: UserWarning: torch.distributed._all_gather_base is a private function and will be deprecated. Please use torch.distributed.all_gather_into_tensor instead.
+  warnings.warn(
+/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/torch/distributed/distributed_c10d.py:2387: UserWarning: torch.distributed._all_gather_base is a private function and will be deprecated. Please use torch.distributed.all_gather_into_tensor instead.
+  warnings.warn(
+Traceback (most recent call last):
+  File "/ocean/projects/cis240002p/jhou/mamba/finetuning/main.py", line 253, in <module>
+    fire.Fire(main)
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/fire/core.py", line 141, in Fire
+    component_trace = _Fire(component, args, parsed_flag_args, context, name)
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/fire/core.py", line 475, in _Fire
+    component, remaining_args = _CallAndUpdateTrace(
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/fire/core.py", line 691, in _CallAndUpdateTrace
+    component = fn(*varargs, **kwargs)
+  File "/ocean/projects/cis240002p/jhou/mamba/finetuning/main.py", line 217, in main
+    train_chunk(
+  File "/ocean/projects/cis240002p/jhou/mamba/finetuning/main.py", line 111, in train_chunk
+    fabric.backward(loss / accumulate_grad_batches)
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/lightning/fabric/fabric.py", line 448, in backward
+    self._strategy.backward(tensor, module, *args, **kwargs)
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/lightning/fabric/strategies/strategy.py", line 191, in backward
+    self.precision.backward(tensor, module, *args, **kwargs)
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/lightning/fabric/plugins/precision/fsdp.py", line 132, in backward
+    super().backward(tensor, model, *args, **kwargs)
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/lightning/fabric/plugins/precision/precision.py", line 107, in backward
+    tensor.backward(*args, **kwargs)
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/torch/_tensor.py", line 488, in backward
+    torch.autograd.backward(
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/torch/autograd/__init__.py", line 197, in backward
+    Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/torch/autograd/function.py", line 267, in apply
+    return user_fn(self, *args)
+  File "/ocean/projects/cis240002p/jhou/envs/mamba/lib/python3.10/site-packages/torch/cuda/amp/autocast_mode.py", line 122, in decorate_bwd
+    return bwd(*args, **kwargs)
+  File "/ocean/projects/cis240002p/jhou/mamba/mamba_ssm/ops/selective_scan_interface.py", line 235, in backward
+    conv1d_out, delta, A, B, C, D, delta_bias, scan_intermediates, out) = ctx.saved_tensors
+RuntimeError: !grad_accumulator_.expired() INTERNAL ASSERT FAILED at "/opt/conda/conda-bld/pytorch_1670525541990/work/torch/csrc/autograd/saved_variable.cpp":216, please report a bug to PyTorch. No grad accumulator for a saved leaf
