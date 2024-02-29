@@ -24,7 +24,7 @@ class MambaEvalWrapper(HFLM):
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
 
     def __init__(self, pretrained="state-spaces/mamba-2.8b", max_length=2048, batch_size=None, device="cuda",
-                 dtype=torch.float16, preserve_rate=1.0):
+                 dtype=torch.float32, preserve_rate=1.0):
         LM.__init__(self)
         self._model = MambaLMHeadModel.from_pretrained(pretrained, dtype=dtype, device=device)
         self._model.lowrank_decomp(preserve_rate=float(preserve_rate), device=device, dtype=dtype)

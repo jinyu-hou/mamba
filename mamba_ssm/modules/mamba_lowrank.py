@@ -131,13 +131,13 @@ class Mamba(nn.Module):
         # self.A_log = nn.Parameter(A_lowrank_weight)
         # preserve_rate = 1.0
         
-        self.in_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.in_proj.weight, self.in_proj.bias, device=device, dtype=dtype)
+        # self.in_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.in_proj.weight, self.in_proj.bias, device=device, dtype=dtype)
         # self.x_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.x_proj.weight, self.x_proj.bias, device=device, dtype=dtype)
         # self.dt_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.dt_proj.weight, self.dt_proj.bias, device=device, dtype=dtype)
         self.out_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.out_proj.weight, self.out_proj.bias, device=device, dtype=dtype)
 
         # self.in_proj, self.x_proj, self.dt_proj, self.out_proj = None, None, None, None
-        self.in_proj = None
+        # self.in_proj = None
         # self.x_proj = None
         # self.dt_proj = None
         self.out_proj = None
@@ -173,7 +173,6 @@ class Mamba(nn.Module):
         Returns: same shape as hidden_states
         """
         batch, seqlen, dim = hidden_states.shape
-        in_proj_A, in_proj_B = self.in_proj_lowrank
         # x_proj_A, x_proj_B = self.x_proj_lowrank
         # dt_proj_A, dt_proj_B = self.dt_proj_lowrank
         out_proj_A, out_proj_B = self.out_proj_lowrank
@@ -187,13 +186,23 @@ class Mamba(nn.Module):
                 return out
 
         # We do matmul and transpose BLH -> HBL at the same time
-        xz = rearrange(
-            in_proj_B.weight @ (in_proj_A.weight @ rearrange(hidden_states, "b l d -> d (b l)")),
-            "d (b l) -> b d l",
-            l=seqlen,
-        )
-        if in_proj_B.bias is not None:
-            xz = xz + rearrange(in_proj_B.bias.to(dtype=xz.dtype), "d -> d 1")
+        if self.in_proj is None:
+            in_proj_A, in_proj_B = self.in_proj_lowrank
+            xz = rearrange(
+                in_proj_B.weight @ (in_proj_A.weight @ rearrange(hidden_states, "b l d -> d (b l)")),
+                "d (b l) -> b d l",
+                l=seqlen,
+            )
+            if in_proj_B.bias is not None:
+                xz = xz + rearrange(in_proj_B.bias.to(dtype=xz.dtype), "d -> d 1")
+        else:
+            xz = rearrange(
+                self.in_proj.weight @ rearrange(hidden_states, "b l d -> d (b l)"),
+                "d (b l) -> b d l",
+                l=seqlen,
+            )
+            if self.in_proj.bias is not None:
+                xz = xz + rearrange(self.in_proj.bias.to(dtype=xz.dtype), "d -> d 1")
 
         # A_log_A, A_log_B = self.A_log_lowrank[0].weight, self.A_log_lowrank[1].weight
         # A_A = -torch.exp(A_log_A.float())  # (d_inner, d_state)
@@ -278,7 +287,10 @@ class Mamba(nn.Module):
     def step(self, hidden_states, conv_state, ssm_state):
         dtype = hidden_states.dtype
         assert hidden_states.shape[1] == 1, "Only support decoding with 1 token at a time for now"
-        xz = self.in_proj_lowrank(hidden_states.squeeze(1))  # (B 2D)
+        if self.in_proj is None:
+            xz = self.in_proj_lowrank(hidden_states.squeeze(1))  # (B 2D)
+        else:
+            self.in_proj(hidden_states.squeeze(1))
         x, z = xz.chunk(2, dim=-1)  # (B D)
 
         # Conv step
