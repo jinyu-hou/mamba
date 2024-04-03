@@ -2,3 +2,8 @@
 *.egg-info/
 build/
 **.so
+evals/results/
+*/=1.1.0
+finetuning/wandb/
+finetuning/workdir_*/
+*.out
