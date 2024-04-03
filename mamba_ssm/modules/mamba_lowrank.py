@@ -131,13 +131,13 @@ class Mamba(nn.Module):
         # self.A_log = nn.Parameter(A_lowrank_weight)
         # preserve_rate = 1.0
         
-        # self.in_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.in_proj.weight, self.in_proj.bias, device=device, dtype=dtype)
+        self.in_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.in_proj.weight, self.in_proj.bias, device=device, dtype=dtype)
         # self.x_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.x_proj.weight, self.x_proj.bias, device=device, dtype=dtype)
         # self.dt_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.dt_proj.weight, self.dt_proj.bias, device=device, dtype=dtype)
         self.out_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.out_proj.weight, self.out_proj.bias, device=device, dtype=dtype)
 
         # self.in_proj, self.x_proj, self.dt_proj, self.out_proj = None, None, None, None
-        # self.in_proj = None
+        self.in_proj = None
         # self.x_proj = None
         # self.dt_proj = None
         self.out_proj = None
@@ -148,6 +148,10 @@ class Mamba(nn.Module):
         # print(self.out_proj_lowrank)
 
     def _param_lowrank_decomp(self, preserve_rate, W, b=None, device=None, dtype=None):
+        if device is None:
+            device = W.device
+        if dtype is None:
+            dtype = W.dtype
         factory_kwargs = {"device": device, "dtype": dtype}
         n, m = W.shape
         U, S, Vh = svd(W.float(), full_matrices=False)
@@ -277,11 +281,7 @@ class Mamba(nn.Module):
                 ssm_state.copy_(last_state)
             y = rearrange(y, "b d l -> b l d")
             out = self.out_proj_lowrank(y)
-
-        A_lowrank = self._param_lowrank_decomp(0.5, self.A_log.float(), device="cuda", dtype=torch.float32)
-        A_lowrank_weight = A_lowrank[1].weight @ A_lowrank[0].weight
-        # print(A_lowrank[1].weight.shape, A_lowrank[0].weight.shape)
-        self.A_log = nn.Parameter(A_lowrank_weight)
+            
         return out
 
     def step(self, hidden_states, conv_state, ssm_state):

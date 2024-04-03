@@ -23,7 +23,7 @@ class MambaEvalWrapper(HFLM):
 
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
 
-    def __init__(self, pretrained="state-spaces/mamba-2.8b", max_length=2048, batch_size=None, device="cuda",
+    def __init__(self, pretrained="state-spaces/mamba-2.8b-slimpj", max_length=2048, batch_size=None, device="cuda",
                  dtype=torch.float32, preserve_rate=1.0):
         LM.__init__(self)
         self._model = MambaLMHeadModel.from_pretrained(pretrained, dtype=dtype, device=device)
@@ -37,6 +37,8 @@ class MambaEvalWrapper(HFLM):
         self._batch_size = int(batch_size) if batch_size is not None else 64
         self._max_length = max_length
         self._device = torch.device(device)
+        # print("Start time: {}".format(datetime.now()))
+
 
     def init_ddp(self, model):
         dist.init_process_group("nccl")
@@ -73,4 +75,5 @@ if __name__ == "__main__":
     startTime = datetime.now()
     cli_evaluate()
     print("***** Time of total execution: {} *****".format(datetime.now() - startTime))
+    # print("End time: {}".format(datetime.now()))
     dist.destroy_process_group()

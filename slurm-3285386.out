@@ -1,0 +1,16 @@
+++ date +%s
++ timestamp=1711254477
++ result_dir=evals/results
++ model_id=mamba-2.8b-slimpj
+++ echo mamba-2.8b-slimpj
+++ tr - _
++ result_prefix=mamba_2.8b_slimpj
++ preserve_rate=0.25
+++ awk -vn=0.25 'BEGIN{printf("%.0f\n",n*100)}'
++ preserve_percentage=25
++ rm evals/results/mamba_2.8b_slimpj-25.jsonl
+rm: cannot remove 'evals/results/mamba_2.8b_slimpj-25.jsonl': No such file or directory
++ accelerate launch evals/lm_harness_eval.py --model mamba --model_args pretrained=state-spaces/mamba-2.8b-slimpj,preserve_rate=0.25 --tasks boolq,piqa,hellaswag,winogrande,arc_easy,arc_challenge,openbookqa,race,truthfulqa_mc2 --device cuda --batch_size 16 --output_path evals/results/mamba_2.8b_slimpj-25.jsonl
+2024-03-24:02:17:15,447 INFO     [utils.py:148] Note: NumExpr detected 64 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+2024-03-24:02:21:17,426 INFO     [config.py:58] PyTorch version 2.2.1+cu118 available.
+slurmstepd: error: *** JOB 3285386 ON gpua094 CANCELLED AT 2024-03-24T03:28:09 DUE TO TIME LIMIT ***

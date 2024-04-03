@@ -1,0 +1,13 @@
+++ date +%s
++ timestamp=1711249010
++ result_dir=evals/results
++ model_id=mamba-2.8b-slimpj
+++ echo mamba-2.8b-slimpj
+++ tr - _
++ result_prefix=mamba_2.8b_slimpj
++ preserve_rate=0.25
+++ awk -vn=0.25 'BEGIN{printf("%.0f\n",n*100)}'
++ preserve_percentage=25
++ rm evals/results/mamba_2.8b_slimpj-25.jsonl
++ accelerate launch evals/lm_harness_eval.py --model mamba --model_args pretrained=state-spaces/mamba-2.8b-slimpj,preserve_rate=0.25 --tasks boolq,piqa,hellaswag,winogrande,arc_easy,arc_challenge,openbookqa,race,truthfulqa_mc2 --device cuda --batch_size 16 --output_path evals/results/mamba_2.8b_slimpj-25.jsonl
+slurmstepd: error: *** JOB 3285084 ON gpua071 CANCELLED AT 2024-03-23T22:45:25 ***
