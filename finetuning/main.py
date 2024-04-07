@@ -10,7 +10,7 @@ import torch
 from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
 import lightning as L
 from lightning.fabric.strategies import FSDPStrategy
-from transformers import AutoConfig, AutoTokenizer
+from transformers import AutoConfig, transformers.get_cosine_schedule_with_warmup
 from datasets import load_dataset
 
 from mamba_ssm.models.mixer_seq_simple import MambaLMHeadModel

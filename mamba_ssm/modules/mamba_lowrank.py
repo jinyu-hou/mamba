@@ -118,11 +118,8 @@ class Mamba(nn.Module):
 
         self.out_proj = nn.Linear(self.d_inner, self.d_model, bias=bias, **factory_kwargs)
 
-        # self.A_log_lowrank = None
-        self.in_proj_lowrank = None
-        self.x_proj_lowrank = None
-        self.dt_proj_lowrank = None
-        self.out_proj_lowrank = None
+        self.in_proj_A, self.in_proj_B = None, None
+        self.out_proj_A, self.out_proj_B = None, None
 
     def lowrank_decomp(self, preserve_rate, device=None, dtype=None):
         # A_lowrank = self._param_lowrank_decomp(preserve_rate, self.A_log.float(), device=device, dtype=torch.float32)
@@ -131,21 +128,15 @@ class Mamba(nn.Module):
         # self.A_log = nn.Parameter(A_lowrank_weight)
         # preserve_rate = 1.0
         
-        self.in_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.in_proj.weight, self.in_proj.bias, device=device, dtype=dtype)
-        # self.x_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.x_proj.weight, self.x_proj.bias, device=device, dtype=dtype)
-        # self.dt_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.dt_proj.weight, self.dt_proj.bias, device=device, dtype=dtype)
-        self.out_proj_lowrank = self._param_lowrank_decomp(preserve_rate, self.out_proj.weight, self.out_proj.bias, device=device, dtype=dtype)
+        self.in_proj_A, self.in_proj_B = self._param_lowrank_decomp(preserve_rate, self.in_proj.weight, self.in_proj.bias, device=device, dtype=dtype)
+        self.out_proj_A, self.out_proj_B = self._param_lowrank_decomp(preserve_rate, self.out_proj.weight, self.out_proj.bias, device=device, dtype=dtype)
 
         # self.in_proj, self.x_proj, self.dt_proj, self.out_proj = None, None, None, None
         self.in_proj = None
         # self.x_proj = None
         # self.dt_proj = None
         self.out_proj = None
-
-        # print(self.in_proj_lowrank)
-        # print(self.x_proj_lowrank)
-        # print(self.dt_proj_lowrank)
-        # print(self.out_proj_lowrank)
+        
 
     def _param_lowrank_decomp(self, preserve_rate, W, b=None, device=None, dtype=None):
         if device is None:
@@ -168,7 +159,7 @@ class Mamba(nn.Module):
             B = nn.Linear(r_reduced, n, bias=True, **factory_kwargs)
             B.bias = b
         B.weight = nn.Parameter(U_reduced @ S_reduced_split)
-        return nn.Sequential(A, B)
+        return A, B
 
 
     def forward(self, hidden_states, inference_params=None):
@@ -177,9 +168,6 @@ class Mamba(nn.Module):
         Returns: same shape as hidden_states
         """
         batch, seqlen, dim = hidden_states.shape
-        # x_proj_A, x_proj_B = self.x_proj_lowrank
-        # dt_proj_A, dt_proj_B = self.dt_proj_lowrank
-        out_proj_A, out_proj_B = self.out_proj_lowrank
 
         conv_state, ssm_state = None, None
         if inference_params is not None:
@@ -191,14 +179,13 @@ class Mamba(nn.Module):
 
         # We do matmul and transpose BLH -> HBL at the same time
         if self.in_proj is None:
-            in_proj_A, in_proj_B = self.in_proj_lowrank
             xz = rearrange(
-                in_proj_B.weight @ (in_proj_A.weight @ rearrange(hidden_states, "b l d -> d (b l)")),
+                self.in_proj_B.weight @ (self.in_proj_A.weight @ rearrange(hidden_states, "b l d -> d (b l)")),
                 "d (b l) -> b d l",
                 l=seqlen,
             )
-            if in_proj_B.bias is not None:
-                xz = xz + rearrange(in_proj_B.bias.to(dtype=xz.dtype), "d -> d 1")
+            if self.in_proj_B.bias is not None:
+                xz = xz + rearrange(self.in_proj_B.bias.to(dtype=xz.dtype), "d -> d 1")
         else:
             xz = rearrange(
                 self.in_proj.weight @ rearrange(hidden_states, "b l d -> d (b l)"),
@@ -208,9 +195,6 @@ class Mamba(nn.Module):
             if self.in_proj.bias is not None:
                 xz = xz + rearrange(self.in_proj.bias.to(dtype=xz.dtype), "d -> d 1")
 
-        # A_log_A, A_log_B = self.A_log_lowrank[0].weight, self.A_log_lowrank[1].weight
-        # A_A = -torch.exp(A_log_A.float())  # (d_inner, d_state)
-        # A_B = -torch.exp(A_log_B.float())  # (d_inner, d_state)
         A = -torch.exp(self.A_log.float())
         # In the backward pass we write dx and dz next to each other to avoid torch.cat
         if self.use_fast_path and inference_params is None:  # Doesn't support outputting the states
@@ -222,9 +206,9 @@ class Mamba(nn.Module):
                 # x_proj_B.weight @ x_proj_A.weight,
                 self.dt_proj.weight,
                 # dt_proj_B.weight @ dt_proj_A.weight,
-                out_proj_A.weight,
-                out_proj_B.weight,
-                out_proj_B.bias,
+                self.out_proj_A.weight,
+                self.out_proj_B.weight,
+                self.out_proj_B.bias,
                 A,
                 None,  # input-dependent B
                 None,  # input-dependent C
@@ -280,7 +264,7 @@ class Mamba(nn.Module):
                 y, last_state = y
                 ssm_state.copy_(last_state)
             y = rearrange(y, "b d l -> b l d")
-            out = self.out_proj_lowrank(y)
+            out = self.out_proj_B(self.out_proj_A(y))
             
         return out
 
@@ -288,7 +272,7 @@ class Mamba(nn.Module):
         dtype = hidden_states.dtype
         assert hidden_states.shape[1] == 1, "Only support decoding with 1 token at a time for now"
         if self.in_proj is None:
-            xz = self.in_proj_lowrank(hidden_states.squeeze(1))  # (B 2D)
+            xz = self.in_proj_B(self.in_proj_A(hidden_states.squeeze(1)))  # (B 2D)
         else:
             self.in_proj(hidden_states.squeeze(1))
         x, z = xz.chunk(2, dim=-1)  # (B D)
@@ -331,7 +315,7 @@ class Mamba(nn.Module):
                 ssm_state, x, dt, A, B, C, self.D, z=z, dt_bias=self.dt_proj.bias, dt_softplus=True
             )
 
-        out = self.out_proj_lowrank(y)
+        out = self.out_proj_B(self.out_proj_A(y))
         return out.unsqueeze(1), conv_state, ssm_state
 
     def allocate_inference_cache(self, batch_size, max_seqlen, dtype=None, **kwargs):

@@ -23,34 +23,36 @@ set -x
 timestamp=$(date +%s)
 # n_gpus=$(nvidia-smi --query-gpu=count --format=csv | tail -1)
 result_dir=evals/results
-model_id=mamba-1.4b
+# model_id=mamba-1.4b
 # model_id=mamba-2.8b
-# model_id=mamba-2.8b-slimpj
+model_id=mamba-2.8b-slimpj
+pretrained=state-spaces/$model_id
+safetensor_path=$SCRATCH/mamba/finetuning/saved_models/checkpoint-2850/model.safetensors
 result_prefix=$(echo $model_id | tr - _)
-preserve_rate=0.5
+preserve_rate=0.25
 preserve_percentage=$(awk -vn=$preserve_rate 'BEGIN{printf("%.0f\n",n*100)}')
 
-# accelerate launch evals/lm_harness_eval.py \
-#     --model mamba \
-#     --model_args pretrained=state-spaces/$model_id,preserve_rate=$preserve_rate \
-#     --device cuda \
-#     --tasks arc_easy \
-#     --batch_size 64 \
-#     --output_path ${result_dir}/$timestamp.jsonl
-
-rm ${result_dir}/${result_prefix}-$preserve_percentage.jsonl 
 accelerate launch --config_file $SCRATCH/huggingface/accelerate/mamba_eval.yaml evals/lm_harness_eval.py \
     --model mamba \
-    --model_args pretrained=state-spaces/$model_id,preserve_rate=$preserve_rate \
-    --tasks boolq,piqa,hellaswag,winogrande,arc_easy,arc_challenge,openbookqa,race,truthfulqa_mc2 \
+    --model_args pretrained=$pretrained,safetensor_path=$safetensor_path,preserve_rate=$preserve_rate \
     --device cuda \
-    --batch_size 4 \
-    --output_path ${result_dir}/${result_prefix}-$preserve_percentage.jsonl 
+    --tasks arc_easy \
+    --batch_size 64 \
+    --output_path ${result_dir}/$timestamp.jsonl
+
+# rm ${result_dir}/${result_prefix}-$preserve_percentage.jsonl 
+# accelerate launch --config_file $SCRATCH/huggingface/accelerate/mamba_eval.yaml evals/lm_harness_eval.py \
+#     --model mamba \
+#     --model_args pretrained=$pretrained,preserve_rate=$preserve_rate \
+#     --tasks boolq,piqa,hellaswag,winogrande,arc_easy,arc_challenge,openbookqa,race,truthfulqa_mc2 \
+#     --device cuda \
+#     --batch_size 4 \
+#     --output_path ${result_dir}/${result_prefix}-$preserve_percentage.jsonl 
 
 # rm ${result_dir}/${result_prefix}-$preserve_percentage-mmlu.jsonl
 # accelerate launch evals/lm_harness_eval.py \
 #     --model mamba \
-#     --model_args pretrained=state-spaces/$model_id,preserve_rate=$preserve_rate \
+#     --model_args pretrained=$pretrained,preserve_rate=$preserve_rate \
 #     --tasks mmlu \
 #     --num_fewshot 5 \
 #     --device cuda \
@@ -59,7 +61,7 @@ accelerate launch --config_file $SCRATCH/huggingface/accelerate/mamba_eval.yaml 
 
 # CUDA_VISIBLE_DEVICES=1 accelerate launch evals/lm_harness_eval.py \
 #     --model mamba \
-#     --model_args pretrained=state-spaces/$model_id,preserve_rate=$preserve_rate \
+#     --model_args pretrained=$pretrained,preserve_rate=$preserve_rate \
 #     --tasks boolq,piqa,hellaswag,winogrande,arc_easy,arc_challenge,openbookqa,race,truthfulqa_mc2 \
 #     --device cuda \
 #     --batch_size 32 \

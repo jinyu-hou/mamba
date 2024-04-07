@@ -1,3 +1,4 @@
+import dataclasses
 from dataclasses import dataclass, field
 
 
@@ -12,3 +13,6 @@ class MambaConfig:
     residual_in_fp32: bool = True
     fused_add_norm: bool = True
     pad_vocab_size_multiple: int = 8
+
+    def to_dict(self):
+        return dataclasses.asdict(self)

@@ -3,8 +3,8 @@ import torch
 import transformers
 from transformers import AutoTokenizer
 
-# from mamba_ssm.models.mixer_seq_simple import MambaLMHeadModel
-from mamba_ssm.models.mixer_seq_lowrank import MambaLMHeadModel
+# from mamba_ssm.models.mixer_seq_simple import MambaForCausalLM
+from mamba_ssm.models.mixer_seq_lowrank import MambaForCausalLM
 
 from lm_eval.api.model import LM
 from lm_eval.models.huggingface import HFLM
@@ -23,15 +23,16 @@ class MambaEvalWrapper(HFLM):
 
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
 
-    def __init__(self, pretrained="state-spaces/mamba-2.8b-slimpj", max_length=2048, batch_size=None, device="cuda",
+    def __init__(self, pretrained="state-spaces/mamba-2.8b-slimpj", safetensor_path=None, max_length=2048, batch_size=None, device="cuda",
                  dtype=torch.float32, preserve_rate=1.0):
         LM.__init__(self)
-        self._model = MambaLMHeadModel.from_pretrained(pretrained, dtype=dtype, device=device)
+        self._model = MambaForCausalLM.from_pretrained(pretrained, safetensor_path=safetensor_path, dtype=dtype, device=device)
         self._model.lowrank_decomp(preserve_rate=float(preserve_rate), device=device, dtype=dtype)
         self.export_el_count(pretrained, float(preserve_rate))
-        if device == "cuda":
-            self._model = self.init_ddp(self._model)
+        # if device == "cuda":
+        #     self._model = self.init_ddp(self._model)
         self.tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
+        # self.tokenizer = AutoTokenizer.from_pretrained(pretrained+"-hf")
         self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         self.vocab_size = self.tokenizer.vocab_size
         self._batch_size = int(batch_size) if batch_size is not None else 64
@@ -76,4 +77,4 @@ if __name__ == "__main__":
     cli_evaluate()
     print("***** Time of total execution: {} *****".format(datetime.now() - startTime))
     # print("End time: {}".format(datetime.now()))
-    dist.destroy_process_group()
+    # dist.destroy_process_group()

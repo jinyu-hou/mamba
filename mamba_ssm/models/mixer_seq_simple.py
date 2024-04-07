@@ -9,6 +9,7 @@ from collections import namedtuple
 
 import torch
 import torch.nn as nn
+from torch.nn import CrossEntropyLoss
 
 from mamba_ssm.models.config_mamba import MambaConfig
 from mamba_ssm.modules.mamba_simple import Mamba, Block
@@ -173,7 +174,7 @@ class MixerModel(nn.Module):
         return hidden_states
 
 
-class MambaLMHeadModel(nn.Module, GenerationMixin):
+class MambaForCausalLM(nn.Module, GenerationMixin):
 
     def __init__(
         self,
@@ -217,7 +218,7 @@ class MambaLMHeadModel(nn.Module, GenerationMixin):
                 **(initializer_cfg if initializer_cfg is not None else {}),
             )
         )
-        self.tie_weights()
+        # self.tie_weights()
 
     def tie_weights(self):
         self.lm_head.weight = self.backbone.embedding.weight
@@ -225,7 +226,7 @@ class MambaLMHeadModel(nn.Module, GenerationMixin):
     def allocate_inference_cache(self, batch_size, max_seqlen, dtype=None, **kwargs):
         return self.backbone.allocate_inference_cache(batch_size, max_seqlen, dtype=dtype, **kwargs)
 
-    def forward(self, input_ids, position_ids=None, inference_params=None, num_last_tokens=0):
+    def forward(self, input_ids, labels=None, position_ids=None, inference_params=None, num_last_tokens=0, **kwargs):
         """
         "position_ids" is just to be compatible with Transformer generation. We don't use it.
         num_last_tokens: if > 0, only return the logits for the last n tokens
@@ -234,11 +235,23 @@ class MambaLMHeadModel(nn.Module, GenerationMixin):
         if num_last_tokens > 0:
             hidden_states = hidden_states[:, -num_last_tokens:]
         lm_logits = self.lm_head(hidden_states)
-        CausalLMOutput = namedtuple("CausalLMOutput", ["logits"])
-        return CausalLMOutput(logits=lm_logits)
+
+        lm_loss = None
+        if labels is not None:
+            # move labels to correct device to enable model parallelism
+            labels = labels.to(lm_logits.device)
+            # Shift so that tokens < n predict n
+            shift_logits = lm_logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            # Flatten the tokens
+            loss_fct = CrossEntropyLoss()
+            lm_loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+
+        CausalLMOutput = namedtuple("CausalLMOutput", ["loss", "logits"])
+        return CausalLMOutput(loss=lm_loss, logits=lm_logits)
 
     @classmethod
-    def from_pretrained(cls, pretrained_model_name, device=None, dtype=None, **kwargs):
+    def from_pretrained(cls, pretrained_model_name, safetensor_path=None, device=None, dtype=None, **kwargs):
         config_data = load_config_hf(pretrained_model_name)
         config = MambaConfig(**config_data)
         model = cls(config, device=device, dtype=dtype, **kwargs)
@@ -247,7 +260,7 @@ class MambaLMHeadModel(nn.Module, GenerationMixin):
 
     def save_pretrained(self, save_directory):
         """
-        Minimal implementation of save_pretrained for MambaLMHeadModel.
+        Minimal implementation of save_pretrained for MambaForCausalLM.
         Save the model and its configuration file to a directory.
         """
         # Ensure save_directory exists
